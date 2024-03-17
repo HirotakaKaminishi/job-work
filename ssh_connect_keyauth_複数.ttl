@@ -1,0 +1,88 @@
+;========================================================== 
+; Filename    : ssh_connect.ttl 
+; Description : SSH Auto login 
+; Author      : 上西
+; Created     : 2024/03/17 
+; modified    : 
+;=========================================================== 
+;; ユーザ名設定 
+;;適宜変更
+USERNAME = 'u0_a407'
+
+;; パスワードファイル指定 
+;;適宜変更
+PASSFILE = 'C:\Users\pc\opt\bin\password.dat'
+;; keypath
+KEYFILE  = 'C:\Users\pc\opt\bin\id_rsa' 
+
+;; パスワード指定
+;;適宜変更
+;; passwd
+PASSWORD  = '4Ernfb7E' 
+;=========================================================== 
+;; ①接続先リスト  
+;;適宜変更
+HOSTADDR_COUNT = 3
+
+strdim HOSTADDR HOSTADDR_COUNT
+
+;;適宜変更
+HOSTADDR[0] = '192.168.111.38'
+HOSTADDR[1] = '192.168.111.38'
+HOSTADDR[2] = '192.168.121.38'
+;=========================================================== 
+
+HOSTADDR_COUNT_ssh = HOSTADDR_COUNT - 1
+
+for i 0 HOSTADDR_COUNT_ssh
+
+;; ③コマンド組立て 
+;;適宜変更
+;; authkey
+;; COMMAND = HOSTADDR[i] 
+;; strconcat COMMAND ':8022 /ssh /2 /auth=publickey /user=' 
+;; strconcat COMMAND USERNAME 
+;; strconcat COMMAND ' /keyfile='
+;; strconcat COMMAND KEYFILE
+
+;; passwd
+COMMAND = HOSTADDR[i] 
+strconcat COMMAND ':8022 /ssh /2 /auth=password /user=' 
+strconcat COMMAND USERNAME 
+strconcat COMMAND ' /passwd=' 
+strconcat COMMAND PASSWORD
+
+;; challenge
+;; COMMAND = HOSTADDR[i] 
+;; strconcat COMMAND ':8022 /ssh /2 /auth=challenge /user=' 
+;; strconcat COMMAND USERNAME 
+;; strconcat COMMAND ' /passwd=' 
+;; strconcat COMMAND PASSWORD
+
+
+;; ④接続 
+connect COMMAND
+ 
+;; ⑤接続判定1（接続出来ない場合はメッセージを表示しマクロ終了） 
+if result <> 2 then 
+    messagebox 'It could not be connected.' 'Connection Error' 
+    end 
+endif
+
+;; ⑥接続判定2（5秒以内にプロンプトが表示されない場合TeraTerm） 
+timeout = 5 
+wait '#' '$' 
+if result=0 then 
+    end 
+endif
+
+;; ⑦ホスト情報表示 
+sendln 'uname -a' 
+wait '$' '#'
+
+unlink
+
+next
+
+;; ⑧マクロ終了 
+end
