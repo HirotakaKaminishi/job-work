@@ -1,0 +1,646 @@
+[root@localhost ~]# cat /etc/os-release
+NAME="CentOS Stream"
+VERSION="9"
+ID="centos"
+ID_LIKE="rhel fedora"
+VERSION_ID="9"
+PLATFORM_ID="platform:el9"
+PRETTY_NAME="CentOS Stream 9"
+ANSI_COLOR="0;31"
+LOGO="fedora-logo-icon"
+CPE_NAME="cpe:/o:centos:centos:9"
+HOME_URL="https://centos.org/"
+BUG_REPORT_URL="https://bugzilla.redhat.com/"
+REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux 9"
+REDHAT_SUPPORT_PRODUCT_VERSION="CentOS Stream"
+[root@localhost ~]#
+
+
+
+
+[root@localhost ~]# cat /etc/anacrontab
+# /etc/anacrontab: configuration file for anacron
+
+# See anacron(8) and anacrontab(5) for details.
+
+SHELL=/bin/sh
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+# the maximal random delay added to the base delay of the jobs
+RANDOM_DELAY=45
+# the jobs will be started during the following hours only
+START_HOURS_RANGE=3-22
+
+#period in days   delay in minutes   job-identifier   command
+1       5       cron.daily              nice run-parts /etc/cron.daily
+7       25      cron.weekly             nice run-parts /etc/cron.weekly
+@monthly 45     cron.monthly            nice run-parts /etc/cron.monthly
+[root@localhost ~]#
+[root@localhost work]# cp -ip /etc/anacrontab anacrontab.org
+[root@localhost work]# ls -l
+合計 32
+-rw-r--r--  1 root root  541 11月 30 23:39 anacrontab.org
+-rw-r--r--  1 root root 3732  4月  6 18:46 password-auth.org
+-rw-r--r--  1 root root 2674  8月  3  2020 pwquality.conf.org
+-rw-------. 1 root root 3667  4月  6 14:45 sshd_config.org
+-r--r-----  1 root root 4328  1月 24 19:10 sudoers.org
+-rw-r--r--  1 root root 4778  4月  6 18:46 system-auth.org
+[root@localhost work]#
+[root@localhost work]# vi /etc/anacrontab
+[root@localhost work]# diff /etc/anacrontab anacrontab.org
+5,7c5,7
+< #SHELL=/bin/sh
+< #PATH=/sbin:/bin:/usr/sbin:/usr/bin
+< #MAILTO=root
+---
+> SHELL=/bin/sh
+> PATH=/sbin:/bin:/usr/sbin:/usr/bin
+> MAILTO=root
+9c9
+< #RANDOM_DELAY=45
+---
+> RANDOM_DELAY=45
+11c11
+< #START_HOURS_RANGE=3-22
+---
+> START_HOURS_RANGE=3-22
+14,16c14,16
+< #1    5       cron.daily              nice run-parts /etc/cron.daily
+< #7    25      cron.weekly             nice run-parts /etc/cron.weekly
+< #@monthly 45  cron.monthly            nice run-parts /etc/cron.monthly
+---
+> 1     5       cron.daily              nice run-parts /etc/cron.daily
+> 7     25      cron.weekly             nice run-parts /etc/cron.weekly
+> @monthly 45   cron.monthly            nice run-parts /etc/cron.monthly
+[root@localhost work]#
+[root@localhost work]# ls -l /etc/cron
+cron.d/       cron.daily/   cron.deny     cron.hourly/  cron.monthly/ cron.weekly/  crontab
+[root@localhost work]# ls -l /etc/cron.d
+cron.d/     cron.daily/ cron.deny
+[root@localhost work]# ls -l /etc/cron.daily/
+合計 0
+[root@localhost work]# ls -l /etc/cron.hourly/
+合計 4
+-rwxr-xr-x. 1 root root 610 11月 30 23:39 0anacron
+[root@localhost work]# ls -l /etc/cron.monthly/
+合計 0
+[root@localhost work]# ls -l /etc/cron.weekly/
+合計 0
+[root@localhost work]# cp -ip /etc/cron.hourly/0anacron 0anacron.org
+[root@localhost work]# cat /etc/cron.hourly/0anacron
+#!/usr/bin/sh
+# Check whether 0anacron was run today already
+if test -r /var/spool/anacron/cron.daily; then
+    day=`cat /var/spool/anacron/cron.daily`
+fi
+if [ `date +%Y%m%d` = "$day" ]; then
+    exit 0
+fi
+
+# Do not run jobs when on battery power
+online=1
+for psupply in /sys/class/power_supply/* ; do
+    if [ `cat "$psupply/type" 2>/dev/null`x = Mainsx ] && [ -f "$psupply/online" ]; then
+        if [ `cat "$psupply/online" 2>/dev/null`x = 1x ]; then
+            online=1
+            break
+        else
+            online=0
+        fi
+    fi
+done
+if [ $online = 0 ]; then
+    exit 0
+fi
+/usr/sbin/anacron -s
+[root@localhost work]# rm /etc/cron.hourly/0anacron
+rm: 通常ファイル '/etc/cron.hourly/0anacron' を削除しますか? y
+[root@localhost work]# ls -l /etc/cron.hourly/
+合計 0
+[root@localhost work]#
+[root@localhost work]# systemctl status crond.service
+● crond.service - Command Scheduler
+     Loaded: loaded (/usr/lib/systemd/system/crond.service; enabled; preset: enabled)
+     Active: active (running) since Sat 2024-04-06 21:29:39 JST; 12s ago
+   Main PID: 2429 (crond)
+      Tasks: 1 (limit: 23149)
+     Memory: 968.0K
+        CPU: 1ms
+     CGroup: /system.slice/crond.service
+             mq2429 /usr/sbin/crond -n
+
+ 4月 06 21:29:39 localhost.localdomain systemd[1]: Started Command Scheduler.
+[root@localhost work]#
+
+
+
+
+[root@localhost ~]# cat /etc/crontab
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+
+# For details see man 4 crontabs
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+
+[root@localhost ~]#
+
+
+
+
+[root@localhost ~]# grubby --info=ALL
+index=0
+kernel="/boot/vmlinuz-5.14.0-432.el9.x86_64"
+args="ro crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/cs-swap rd.lvm.lv=cs/root rd.lvm.lv=cs/swap rhgb quiet"
+root="/dev/mapper/cs-root"
+initrd="/boot/initramfs-5.14.0-432.el9.x86_64.img $tuned_initrd"
+title="CentOS Stream (5.14.0-432.el9.x86_64) 9"
+id="cb9a861c414e4264a93c5226062d5c60-5.14.0-432.el9.x86_64"
+index=1
+kernel="/boot/vmlinuz-0-rescue-cb9a861c414e4264a93c5226062d5c60"
+args="ro crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/cs-swap rd.lvm.lv=cs/root rd.lvm.lv=cs/swap rhgb quiet"
+root="/dev/mapper/cs-root"
+initrd="/boot/initramfs-0-rescue-cb9a861c414e4264a93c5226062d5c60.img"
+title="CentOS Stream (0-rescue-cb9a861c414e4264a93c5226062d5c60) 9"
+id="cb9a861c414e4264a93c5226062d5c60-0-rescue"
+[root@localhost ~]#
+[root@localhost ~]# getenforce
+Enforcing
+[root@localhost ~]#
+[root@localhost ~]# grubby --update-kernel ALL --args selinux=0
+[root@localhost ~]#
+[root@localhost ~]# grubby --info=ALL
+index=0
+kernel="/boot/vmlinuz-5.14.0-432.el9.x86_64"
+args="ro crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/cs-swap rd.lvm.lv=cs/root rd.lvm.lv=cs/swap rhgb quiet selinux=0"
+root="/dev/mapper/cs-root"
+initrd="/boot/initramfs-5.14.0-432.el9.x86_64.img $tuned_initrd"
+title="CentOS Stream (5.14.0-432.el9.x86_64) 9"
+id="cb9a861c414e4264a93c5226062d5c60-5.14.0-432.el9.x86_64"
+index=1
+kernel="/boot/vmlinuz-0-rescue-cb9a861c414e4264a93c5226062d5c60"
+args="ro crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/cs-swap rd.lvm.lv=cs/root rd.lvm.lv=cs/swap rhgb quiet selinux=0"
+root="/dev/mapper/cs-root"
+initrd="/boot/initramfs-0-rescue-cb9a861c414e4264a93c5226062d5c60.img"
+title="CentOS Stream (0-rescue-cb9a861c414e4264a93c5226062d5c60) 9"
+id="cb9a861c414e4264a93c5226062d5c60-0-rescue"
+[root@localhost ~]#
+[root@localhost ~]# getenforce
+Disabled
+[root@localhost ~]#
+
+
+
+
+[root@localhost ~]# systemctl list-unit-files |grep firewall
+firewalld.service                          enabled         enabled
+[root@localhost ~]#
+[root@localhost ~]# systemctl stop firewalld && systemctl status $_
+○ firewalld.service - firewalld - dynamic firewall daemon
+     Loaded: loaded (/usr/lib/systemd/system/firewalld.service; disabled; preset: enabled)
+     Active: inactive (dead)
+       Docs: man:firewalld(1)
+
+ 4月 06 17:34:12 localhost systemd[1]: Starting firewalld - dynamic firewall daemon...
+ 4月 06 17:34:14 localhost systemd[1]: Started firewalld - dynamic firewall daemon.
+ 4月 06 17:41:03 localhost.localdomain systemd[1]: Stopping firewalld - dynamic firewall daemon...
+ 4月 06 17:41:03 localhost.localdomain systemd[1]: firewalld.service: Deactivated successfully.
+ 4月 06 17:41:03 localhost.localdomain systemd[1]: Stopped firewalld - dynamic firewall daemon.
+[root@localhost ~]#
+[root@localhost ~]# systemctl disable firewalld &&  systemctl is-enabled $_
+disabled
+[root@localhost ~]#
+
+
+
+
+[root@localhost ~]# systemctl status auditd
+● auditd.service - Security Auditing Service
+     Loaded: loaded (/usr/lib/systemd/system/auditd.service; enabled; preset: enabled)
+     Active: active (running) since Sat 2024-04-06 17:55:31 JST; 2min 33s ago
+       Docs: man:auditd(8)
+             https://github.com/linux-audit/audit-documentation
+    Process: 677 ExecStart=/sbin/auditd (code=exited, status=0/SUCCESS)
+    Process: 683 ExecStartPost=/sbin/augenrules --load (code=exited, status=0/SUCCESS)
+   Main PID: 678 (auditd)
+      Tasks: 4 (limit: 23149)
+     Memory: 7.6M
+        CPU: 32ms
+     CGroup: /system.slice/auditd.service
+             tq678 /sbin/auditd
+             mq680 /usr/sbin/sedispatch
+
+ 4月 06 17:55:31 localhost augenrules[693]: enabled 1
+ 4月 06 17:55:31 localhost augenrules[693]: failure 1
+ 4月 06 17:55:31 localhost augenrules[693]: pid 678
+ 4月 06 17:55:31 localhost augenrules[693]: rate_limit 0
+ 4月 06 17:55:31 localhost augenrules[693]: backlog_limit 8192
+ 4月 06 17:55:31 localhost augenrules[693]: lost 0
+ 4月 06 17:55:31 localhost augenrules[693]: backlog 4
+ 4月 06 17:55:31 localhost augenrules[693]: backlog_wait_time 60000
+ 4月 06 17:55:31 localhost augenrules[693]: backlog_wait_time_actual 0
+ 4月 06 17:55:31 localhost systemd[1]: Started Security Auditing Service.
+[root@localhost ~]#
+[root@localhost ~]#
+[root@localhost ~]# systemctl is-enabled auditd
+enabled
+[root@localhost ~]#
+[root@localhost ~]# cat /etc/default/grub
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
+GRUB_DEFAULT=saved
+GRUB_DISABLE_SUBMENU=true
+GRUB_TERMINAL_OUTPUT="console"
+GRUB_CMDLINE_LINUX="crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/cs-swap rd.lvm.lv=cs/root rd.lvm.lv=cs/swap rhgb quiet selinux=0"
+GRUB_DISABLE_RECOVERY="true"
+GRUB_ENABLE_BLSCFG=true
+[root@localhost ~]#
+[root@localhost ~]#  grubby --update-kernel ALL --args audit=0 && grubby --info=ALL
+index=0
+kernel="/boot/vmlinuz-5.14.0-432.el9.x86_64"
+args="ro crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/cs-swap rd.lvm.lv=cs/root rd.lvm.lv=cs/swap rhgb quiet selinux=0 audit=0"
+root="/dev/mapper/cs-root"
+initrd="/boot/initramfs-5.14.0-432.el9.x86_64.img $tuned_initrd"
+title="CentOS Stream (5.14.0-432.el9.x86_64) 9"
+id="cb9a861c414e4264a93c5226062d5c60-5.14.0-432.el9.x86_64"
+index=1
+kernel="/boot/vmlinuz-0-rescue-cb9a861c414e4264a93c5226062d5c60"
+args="ro crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M resume=/dev/mapper/cs-swap rd.lvm.lv=cs/root rd.lvm.lv=cs/swap rhgb quiet selinux=0 audit=0"
+root="/dev/mapper/cs-root"
+initrd="/boot/initramfs-0-rescue-cb9a861c414e4264a93c5226062d5c60.img"
+title="CentOS Stream (0-rescue-cb9a861c414e4264a93c5226062d5c60) 9"
+id="cb9a861c414e4264a93c5226062d5c60-0-rescue"
+[root@localhost ~]#
+[root@localhost ~]# systemctl status systemd-journald-audit.socket
+○ systemd-journald-audit.socket - Journal Audit Socket
+     Loaded: loaded (/usr/lib/systemd/system/systemd-journald-audit.socket; sta>
+     Active: inactive (dead)
+   Triggers: ● systemd-journald.service
+       Docs: man:systemd-journald.service(8)
+             man:journald.conf(5)
+     Listen: audit 1 (Netlink)
+[root@localhost ~]#
+[root@localhost ~]# systemctl mask systemd-journald-audit.socket
+Created symlink /etc/systemd/system/systemd-journald-audit.socket → /dev/null.
+[root@localhost ~]#
+[root@localhost ~]# systemctl status systemd-journald-audit.socket
+○ systemd-journald-audit.socket
+     Loaded: masked (Reason: Unit systemd-journald-audit.socket is masked.)
+     Active: inactive (dead)
+[root@localhost ~]#
+
+
+
+
+[root@localhost ~]# grep ^password /etc/pam.d/system-auth
+password    requisite                                    pam_pwquality.so local_users_only
+password    sufficient                                   pam_unix.so sha512 shadow nullok use_authtok
+password    [success=1 default=ignore]                   pam_localuser.so
+password    sufficient                                   pam_sss.so use_authtok
+password    required                                     pam_deny.so
+[root@localhost ~]# grep ^password /etc/pam.d/password-auth
+password    requisite                                    pam_pwquality.so local_users_only
+password    sufficient                                   pam_unix.so sha512 shadow nullok use_authtok
+password    [success=1 default=ignore]                   pam_localuser.so
+password    sufficient                                   pam_sss.so use_authtok
+password    required                                     pam_deny.so
+[root@localhost ~]#
+[root@localhost ~]# cat /etc/login.defs |grep PASS
+#       PASS_MAX_DAYS   Maximum number of days a password may be used.
+#       PASS_MIN_DAYS   Minimum number of days allowed between password changes.
+#       PASS_MIN_LEN    Minimum acceptable password length.
+#       PASS_WARN_AGE   Number of days warning given before a password expires.
+PASS_MAX_DAYS   99999
+PASS_MIN_DAYS   0
+PASS_WARN_AGE   7
+# Currently PASS_MIN_LEN is not supported
+# Currently PASS_CHANGE_TRIES is not supported
+# Currently PASS_ALWAYS_WARN is not supported
+# Currently PASS_MAX_LEN is not supported
+[root@localhost ~]#
+[root@localhost ~]# ls -l /etc/authselect/
+合計 40
+-rw-r--r--. 1 root root   56  4月  6 18:27 authselect.conf
+drwxr-xr-x. 2 root root    6  8月  3  2023 custom
+-rw-r--r--  1 root root  230  4月  6 18:27 dconf-db
+-rw-r--r--  1 root root  260  4月  6 18:27 dconf-locks
+-rw-r--r--  1 root root 1444  4月  6 18:27 fingerprint-auth
+-rw-r--r--  1 root root 2980  4月  6 18:27 nsswitch.conf
+-rw-r--r--  1 root root 2204  4月  6 18:27 password-auth
+-rw-r--r--  1 root root  393  4月  6 18:27 postlogin
+-rw-r--r--  1 root root  140  4月  6 18:27 smartcard-auth
+-rw-r--r--  1 root root 2276  4月  6 18:27 system-auth
+-rw-r--r--. 1 root root 2124  4月  6 12:39 user-nsswitch.conf
+[root@localhost ~]# ls -l /etc/authselect/custom/
+合計 0
+[root@localhost ~]#
+[root@localhost ~]#  authselect current
+プロファイル ID: sssd
+有効な機能:
+- with-fingerprint
+- with-silent-lastlog
+[root@localhost ~]#
+[root@localhost ~]# authselect enable-feature with-faillock
+Make sure that SSSD service is configured and enabled. See SSSD documentation for more information.
+[root@localhost ~]#  authselect current
+プロファイル ID: sssd
+有効な機能:
+- with-fingerprint
+- with-silent-lastlog
+- with-faillock
+[root@localhost ~]#
+[root@localhost ~]# authselect select custom/password-policy
+プロファイル "custom/password-policy" が設定されました。
+以下の nsswitch マップはプロファイルで上書きされます:
+- passwd
+- group
+- netgroup
+- automount
+- services
+
+Make sure that SSSD service is configured and enabled. See SSSD documentation for more information.
+
+[root@localhost ~]# authselect current
+プロファイル ID: custom/password-policy
+有効な機能: なし
+[root@localhost ~]#
+[root@localhost ~]# authselect apply-changes
+変更は正常に適用されました。
+[root@localhost ~]# authselect current
+プロファイル ID: custom/password-policy
+有効な機能: なし
+[root@localhost ~]#
+[root@localhost ~]# authselect enable-feature with-fingerprint
+Make sure that SSSD service is configured and enabled. See SSSD documentation for more information.
+
+- with-fingerprint is selected, make sure fprintd service is configured and enabled
+
+[root@localhost ~]# authselect current
+プロファイル ID: custom/password-policy
+有効な機能:
+- with-fingerprint
+[root@localhost ~]# authselect enable-feature with-silent-lastlog
+Make sure that SSSD service is configured and enabled. See SSSD documentation for more information.
+
+[root@localhost ~]# authselect enable-feature with-faillock
+Make sure that SSSD service is configured and enabled. See SSSD documentation for more information.
+
+[root@localhost ~]# authselect current
+プロファイル ID: custom/password-policy
+有効な機能:
+- with-fingerprint
+- with-silent-lastlog
+- with-faillock
+[root@localhost ~]#
+[root@localhost work]# ls -l /etc/authselect/custom/password-policy/
+合計 48
+-rw-r--r-- 1 root root 4633  4月  6 18:46 README
+-rw-r--r-- 1 root root 3248  4月  6 18:46 REQUIREMENTS
+-rw-r--r-- 1 root root  540  4月  6 18:46 dconf-db
+-rw-r--r-- 1 root root  279  4月  6 18:46 dconf-locks
+-rw-r--r-- 1 root root 2461  4月  6 18:46 fingerprint-auth
+-rw-r--r-- 1 root root  505  4月  6 18:46 nsswitch.conf
+-rw-r--r-- 1 root root 3732  4月  6 18:46 password-auth
+-rw-r--r-- 1 root root  340  4月  6 18:46 postlogin
+-rw-r--r-- 1 root root 2355  4月  6 18:46 smartcard-auth
+-rw-r--r-- 1 root root 4778  4月  6 18:46 system-auth
+[root@localhost work]#
+[root@localhost work]# authselect current
+プロファイル ID: custom/password-policy
+有効な機能:
+- with-fingerprint
+- with-silent-lastlog
+- with-faillock
+[root@localhost work]#
+[root@localhost work]# authselect disable-feature with-silent-lastlog
+[root@localhost work]# authselect disable-feature with-fingerprint
+[root@localhost work]# authselect disable-feature with-faillock
+[root@localhost work]# authselect current
+プロファイル ID: custom/password-policy
+有効な機能: なし
+[root@localhost work]#
+[root@localhost work]# authselect apply-changes
+変更は正常に適用されました。
+[root@localhost work]#
+[root@localhost work]#
+[root@localhost work]# cat /etc/security/faillock.conf |grep -v ^#
+[root@localhost work]#
+[root@localhost work]#  grep ^password  /etc/authselect/custom/password-policy/system-auth
+password    requisite                                    pam_pwquality.so local_users_only
+password    [default=1 ignore=ignore success=ok]         pam_localuser.so                                       {include if "with-pwhistory"}
+password    requisite                                    pam_pwhistory.so use_authtok                           {include if "with-pwhistory"}
+password    sufficient                                   pam_unix.so sha512 shadow {if not "without-nullok":nullok} use_authtok
+password    [success=1 default=ignore]                   pam_localuser.so
+password    sufficient                                   pam_sss.so use_authtok
+password    required                                     pam_deny.so
+[root@localhost work]#
+[root@localhost work]#
+[root@localhost work]#  grep ^password  /etc/authselect/custom/password-policy/password-auth
+password    requisite                                    pam_pwquality.so local_users_only
+password    [default=1 ignore=ignore success=ok]         pam_localuser.so                                       {include if "with-pwhistory"}
+password    requisite                                    pam_pwhistory.so use_authtok                           {include if "with-pwhistory"}
+password    sufficient                                   pam_unix.so sha512 shadow {if not "without-nullok":nullok} use_authtok
+password    [success=1 default=ignore]                   pam_localuser.so
+password    sufficient                                   pam_sss.so use_authtok
+password    required                                     pam_deny.so
+[root@localhost work]#
+[root@localhost work]#
+[root@localhost work]# cp -ip  /etc/authselect/custom/password-policy/password-auth password-auth.org
+[root@localhost work]# cp -ip  /etc/authselect/custom/password-policy/system-auth system-auth.org
+[root@localhost work]# ls -l
+合計 24
+-rw-r--r--  1 root root 3732  4月  6 18:46 password-auth.org
+-rw-------. 1 root root 3667  4月  6 14:45 sshd_config.org
+-r--r-----  1 root root 4328  1月 24 19:10 sudoers.org
+-rw-r--r--  1 root root 4778  4月  6 18:46 system-auth.org
+[root@localhost work]# vi  /etc/authselect/custom/password-policy/password-auth
+[root@localhost work]# vi /etc/authselect/custom/password-policy/system-auth
+[root@localhost work]# diff /etc/authselect/custom/password-policy/password-auth password-auth.org
+25d24
+< password    requisite                                    pam_pwquality.so retry=3
+[root@localhost work]# diff /etc/authselect/custom/password-policy/system-auth system-auth.org
+32d31
+< password    requisite                                    pam_pwquality.so retry=3
+[root@localhost work]#
+[root@localhost work]# authselect current
+プロファイル ID: custom/password-policy
+有効な機能: なし
+[root@localhost work]# authselect apply-changes
+変更は正常に適用されました。
+[root@localhost work]#
+[root@localhost work]# cp -ip  /etc/security/pwquality.conf pwquality.conf.org
+[root@localhost work]# ls -l
+合計 28
+-rw-r--r--  1 root root 3732  4月  6 18:46 password-auth.org
+-rw-r--r--  1 root root 2674  8月  3  2020 pwquality.conf.org
+-rw-------. 1 root root 3667  4月  6 14:45 sshd_config.org
+-r--r-----  1 root root 4328  1月 24 19:10 sudoers.org
+-rw-r--r--  1 root root 4778  4月  6 18:46 system-auth.org
+[root@localhost work]#
+[root@localhost work]# vi  /etc/security/pwquality.conf
+[root@localhost work]#
+[root@localhost work]#
+[root@localhost work]#
+[root@localhost work]# useradd -D
+GROUP=100
+HOME=/home
+INACTIVE=-1
+EXPIRE=
+SHELL=/bin/bash
+SKEL=/etc/skel
+CREATE_MAIL_SPOOL=yes
+[root@localhost work]#
+[root@localhost work]# cat /etc/group |grep 100
+users:x:100:
+[root@localhost work]#
+[root@localhost work]# useradd testuser
+[root@localhost work]# passwd testuser
+ユーザー testuser のパスワードを変更。
+新しい パスワード:
+正しくないパスワード: このパスワードは 8 文字未満の文字列です
+新しい パスワードを再入力してください:
+パスワードが一致しません。
+passwd: 認証トークン操作エラー
+[root@localhost work]# passwd testuser
+ユーザー testuser のパスワードを変更。
+新しい パスワード:
+正しくないパスワード: このパスワードの文字クラスは、4 種類未満です
+新しい パスワードを再入力してください:
+パスワードが一致しません。
+passwd: 認証トークン操作エラー
+[root@localhost work]# passwd testuser
+ユーザー testuser のパスワードを変更。
+新しい パスワード:
+正しくないパスワード: このパスワードは辞書チェックに失敗しました - 辞書の単語に基づいています
+新しい パスワードを再入力してください:
+正しくないパスワード: このパスワードは辞書チェックに失敗しました - 辞書の単語に基づいています
+passwd: すべての認証トークンが正しく更新できました。
+[root@localhost work]# useradd testuser2
+[root@localhost work]# passwd testuser2
+ユーザー testuser2 のパスワードを変更。
+新しい パスワード:
+正しくないパスワード: このパスワードは辞書チェックに失敗しました - 辞書の単語に基づいています
+新しい パスワードを再入力してください:
+正しくないパスワード: このパスワードは辞書チェックに失敗しました - 辞書の単語に基づいています
+passwd: すべての認証トークンが正しく更新できました。
+[root@localhost work]# su - testuser
+[testuser@localhost ~]$ su - testuser2
+パスワード:
+[testuser2@localhost ~]$
+ログアウト
+[testuser@localhost ~]$ su - testuser2
+パスワード:
+su: 認証失敗
+[testuser@localhost ~]$ su - testuser2
+パスワード:
+su: 認証失敗
+[testuser@localhost ~]$ su - testuser2
+パスワード:
+su: 認証失敗
+[testuser@localhost ~]$
+[testuser@localhost ~]$ su - testuser2
+パスワード:
+su: 認証失敗
+[testuser@localhost ~]$ su - testuser2
+パスワード:
+最終ログイン: 2024/04/06 (土) 20:58:23 JST 日時 pts/0
+最後の失敗ログイン: 2024/04/06 (土) 20:59:37 JST 日時 pts/0
+最後の正しいログインの後に 4 回の失敗ログインの試行があります
+[testuser2@localhost ~]$ su -
+パスワード:
+最終ログイン: 2024/04/06 (土) 18:15:26 JST 192.168.1.1から開始 日時 pts/0
+[root@localhost ~]#
+ログアウト
+[testuser2@localhost ~]$ reboot
+User root is logged in on sshd.
+Please retry operation after closing inhibitors and logging out other users.
+Alternatively, ignore inhibitors and users with 'systemctl reboot -i'.
+[testuser2@localhost ~]$ shutdown -r now
+User root is logged in on sshd.
+Please retry operation after closing inhibitors and logging out other users.
+Alternatively, ignore inhibitors and users with 'systemctl reboot -i'.
+[testuser2@localhost ~]$ sudo shutdown -r now
+
+あなたはシステム管理者から通常の講習を受けたはずです。
+これは通常、以下の3点に要約されます:
+
+    #1) 他人のプライバシーを尊重すること。
+    #2) タイプする前に考えること。
+    #3) 大いなる力には大いなる責任が伴うこと。
+
+[sudo] testuser2 のパスワード:
+testuser2 は sudoers ファイル内にありません。この事象は記録・報告されます。
+[testuser2@localhost ~]$
+
+
+
+
+[root@localhost ~]# cp -ip /etc/sudoers /work/sudoers.org && ls -l /work |grep sudoers
+-r--r-----  1 root root 4328  1月 24 19:10 sudoers.org
+[root@localhost ~]#
+[root@localhost work]# visudo
+[root@localhost work]#
+[root@localhost work]#
+[root@localhost work]# diff /etc/sudoers sudoers.org
+110c110
+< %wheel        ALL=(ALL)       NOPASSWD: ALL
+---
+> # %wheel      ALL=(ALL)       NOPASSWD: ALL
+[root@localhost work]#
+[root@localhost work]# cat /etc/group |grep wheel
+wheel:x:10:
+[root@localhost work]# cat /etc/group |grep root
+root:x:0:
+[root@localhost work]#
+
+
+
+
+[root@localhost work]# systemctl status chronyd
+● chronyd.service - NTP client/server
+     Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; preset: enabled)
+     Active: active (running) since Sat 2024-04-06 18:15:11 JST; 3h 33min ago
+       Docs: man:chronyd(8)
+             man:chrony.conf(5)
+   Main PID: 693 (chronyd)
+      Tasks: 1 (limit: 23149)
+     Memory: 3.7M
+        CPU: 50ms
+     CGroup: /system.slice/chronyd.service
+             mq693 /usr/sbin/chronyd -F 2
+
+ 4月 06 18:15:10 localhost systemd[1]: Starting NTP client/server...
+ 4月 06 18:15:11 localhost chronyd[693]: chronyd version 4.5 starting (+CMDMON +NTP +REFCLOCK +RTC +PRIVDROP +SC>
+ 4月 06 18:15:11 localhost chronyd[693]: Loaded 0 symmetric keys
+ 4月 06 18:15:11 localhost chronyd[693]: Frequency -2.053 +/- 1.554 ppm read from /var/lib/chrony/drift
+ 4月 06 18:15:11 localhost chronyd[693]: Using right/UTC timezone to obtain leap second data
+ 4月 06 18:15:11 localhost chronyd[693]: Loaded seccomp filter (level 2)
+ 4月 06 18:15:11 localhost systemd[1]: Started NTP client/server.
+ 4月 06 18:15:29 localhost.localdomain chronyd[693]: Selected source 160.16.113.133 (2.centos.pool.ntp.org)
+ 4月 06 18:15:29 localhost.localdomain chronyd[693]: System clock TAI offset set to 37 seconds
+[root@localhost work]#
+[root@localhost work]# systemctl is-enabled chronyd.service
+enabled
+[root@localhost work]#  grep -v -e '^\s*#' -e '^\s*$' /etc/chrony.conf
+pool 2.centos.pool.ntp.org iburst
+sourcedir /run/chrony-dhcp
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+keyfile /etc/chrony.keys
+ntsdumpdir /var/lib/chrony
+leapsectz right/UTC
+logdir /var/log/chrony
+[root@localhost work]#
+
+
+
+

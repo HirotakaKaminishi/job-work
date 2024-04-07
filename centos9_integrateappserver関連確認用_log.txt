@@ -1,0 +1,136 @@
+dnf list | grep -i "audit-libs.*86_64"
+dnf list | grep -i "cracklib.*86_64"
+dnf list | grep -i "elfutils-libelf.*86_64"
+dnf list | grep -i "expat.*86_64"
+dnf list | grep -i "freetype.*86_64"
+dnf list | grep -i "glibc.*86_64"
+dnf list | grep -i "graphite2.*86_64"
+dnf list | grep -i "harfbuzz.*86_64"
+dnf list | grep -i "krb5-workstation.*86_64"
+dnf list | grep -i "libgcc.*86_64"
+dnf list | grep -i "libnsl.*86_64"
+dnf list | grep -i "libpng.*86_64"
+dnf list | grep -i "libpwquality.*86_64"
+dnf list | grep -i "libselinux.*86_64"
+dnf list | grep -i "libstdc++.*86_64"
+dnf list | grep -i "libuuid.*86_64"
+dnf list | grep -i "libxcb.*86_64"
+dnf list | grep -i "lksctp-tools.*86_64"
+dnf list | grep -i "ncurses-libs.*86_64"
+dnf list | grep -i "nss-softokn-freebl.*86_64"
+dnf list | grep -i "pam.*86_64"
+dnf list | grep -i "perl.*86_64"
+dnf list | grep -i "perl-libs.*86_64"
+dnf list | grep -i "perl-Pod-Escapes.*noarch"
+dnf list | grep -i "perl-Pod-Simple.*noarch"
+dnf list | grep -i "perl-version.*86_64"
+dnf list | grep -i "procps-ng.*86_64"
+dnf list | grep -i "procps-ng-i18n.*noarch"
+dnf list | grep -i "readline.*86_64"
+dnf list | grep -i "strace.*86_64"
+dnf list | grep -i "tar.*86_64"
+dnf list | grep -i "tcsh.*86_64"
+dnf list | grep -i "unixODBC.*86_64"
+dnf list | grep -i "unzip.*86_64"
+
+
+===========================================
+
+FJSVsmee64、FJSVsclr64パッケージがインストールされているかを確認します。また、インストールされている場合には、そのバージョンレベルを確認します。
+それぞれ、以下の方法で確認します。
+
+rpm -q -i FJSVsmee64 | grep Version
+rpm -q -i FJSVsclr64 | grep Version
+rpm -q -a | grep FJSV
+
+
+===========================================
+
+インストールする富士通製品に含まれているパッケージの確認
+
+インストールしようとしている富士通製品に含まれているパッケージのバージョンは、以下の手順で確認できます。
+
+# rpm -q -i -p パッケージファイル名 | grep -E 'Version|Name'
+実行結果は以下のように表示されます。パッケージ名とバージョン情報(下線部)を参照して確認してください。
+
+# rpm -q -i -p FJSV_Smee64-4.2.5.01-01.x86_64.rpm | grep -E 'Version|Name'
+Name        : FJSVsmee64Version     : 4.2.5.01
+# rpm -q -i -p FJSVsclr64-2.1.1.01-01.x86_64.rpm | grep -E 'Version|Name'
+Name        : FJSVsclr64Version     : 2.1.1.01
+
+===========================================
+
+本製品のサーバパッケージDVDをマウントする場合、次のようにmountコマンドで明示的にISO 9660ファイルシステムを指定することを推奨します。
+
+
+# mount -t iso9660 -r /dev/デバイスファイル名 <DVD-ROMマウントディレクトリ>
+
+===========================================
+
+
+本製品をインストールする前に以下の作業を行ってください。
+
+
+空きディスクの確認
+
+インストールに必要となる空きディスクがあることを確認してください。ディスク容量については、“2.5 インストール時に必要なディスク容量”を参照してください。
+空きディスクが不足している場合は、該当するファイルシステムのサイズを拡張してください。
+
+
+システムパラメタの確認
+
+本製品を運用する際にはシステムパラメタのチューニングが事前に必要です。
+/etc/sysctl.confを編集して、共有メモリ、セマフォ、メッセージキューの値を適切な値に変更してください。各パラメタ値は、“チューニングガイド”の“サーバ機能運用時に必要なシステム資源”を参照して計算してください。
+システムパラメタを算出するためのExcelファイルがマニュアルDVDの“ApplicationServer\tuning”配下のサブフォルダに“ISAS-IPCtuning.xlsx”として格納されています。Microsoft(R) Excel 2013もしくは以降のバージョンのMicrosoft(R) Excelをお持ちの場合は“ISAS-IPCtuning.xlsx”を使用してシステムパラメタを算出することが可能です。使用方法などの詳細については、当該Excelファイル内の説明記事を参照してください。
+
+
+ネットワーク設定の確認
+
+本製品の導入時には、自ホストのホスト名に対するアドレスとして、ループバックアドレス以外のそのマシンに割り当てられた実IPアドレスを、必ずhostsファイルに設定してください。また、同じホスト名をループバックアドレス("127.0.0.1"、"::1")に設定しないようにしてください。
+
+
+本製品の確認
+
+古いバージョン・レベルや異なるエディションの本製品がインストールされている場合、インストールを実行することができません。あらかじめ、インストールの有無を確認し、インストールされている場合は、環境設定ファイルの退避後にインストール済みの本製品を削除しインストールを実行してください。
+環境設定ファイルの退避方法は、“運用ガイド(基本編)”の“メンテナンス（資源のバックアップ/他サーバへの資源移行/ホスト情報の変更）”を参照してください。
+なお、「アンインストールと管理(ミドルウェア)」を使用して、インストールされている本製品のバージョン・レベル、エディションを確認することができます。
+
+
+1. 次のコマンドを実行します。
+
+# /opt/FJSVcir/cimanager.sh -c
+「アンインストールと管理(ミドルウェア)」が起動し、インストール済み製品名一覧が表示されます。
+
+
+2. 製品情報の詳細を参照する場合は、該当する製品の番号を入力します。
+
+アンインストールと管理(ミドルウェア)をロードしています...
+
+
+インストール済みソフトウェア
+1. Interstage Application Server Enterprise Edition  V12.3.0
+
+アンインストールするソフトウェアの番号を入力してください。
+[number,q]
+=>1
+
+
+Interstage Application Server Enterprise Edition
+    説明: Interstage Application Server Enterprise Edition
+    バージョン: V12.3.0
+    会社名: 富士通株式会社
+    インストール先ディレクトリ: /opt/FJSVisas
+    インストール日付: 2020-8-3
+
+
+アンインストールを開始します。よろしいですか？
+[y,b,q]
+=>q
+
+3. ひとつ前の情報へ戻る時は「b」を、終了する時は「q」を入力します。
+
+注意
+
+「y」を入力すると、選択されている製品がアンインストールされますので注意してください。
+
+
