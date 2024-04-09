@@ -1,0 +1,20 @@
+C:\Users\Administrator>fsutil 8dot3name query C:
+ボリュームの状態は 0 です (8dot3 名の作成は有効です)
+レジストリの状態は 2 です (ボリューム単位で設定します - 既定値)
+
+以上の設定に基づいて、8dot3 名の作成は "C:" で有効です
+
+C:\Users\Administrator>
+
+
+
+
+C:\Users\Administrator>change user /query
+アプリケーション実行モードは有効です。
+リモート管理用に構成されたリモート デスクトップ セッション ホスト サーバーにインストール モードは適用されません。
+
+C:\Users\Administrator>
+
+
+PS C:\Users\Administrator> Get-WindowsFeature | Out-File -FilePath "C:\Users\Administrator\Desktop\WindowsServer2022_FeatureList.log"
+PS C:\Users\Administrator>
